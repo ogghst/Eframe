@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>E-Ink Dashboard Configuration</title>
+</head>
+<body>
+    <h1>E-Ink Dashboard Configuration</h1>
+
+    <h2>Upload Configuration</h2>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="config" accept=".json">
+        <input type="submit" value="Upload">
+    </form>
+
+    <h2>Status</h2>
+    <div id="status">
+        <p>Wi-Fi Status: <span id="wifi-status">Unknown</span></p>
+        <p>MQTT Status: <span id="mqtt-status">Unknown</span></p>
+    </div>
+
+    <h2>System</h2>
+    <button onclick="reboot()">Reboot Device</button>
+
+    <script>
+        function getStatus() {
+            fetch('/status')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('wifi-status').textContent = data.wifi;
+                    document.getElementById('mqtt-status').textContent = data.mqtt;
+                })
+                .catch(error => {
+                    console.error('Error fetching status:', error);
+                    document.getElementById('wifi-status').textContent = 'Error';
+                    document.getElementById('mqtt-status').textContent = 'Error';
+                });
+        }
+
+        function reboot() {
+            if (confirm('Are you sure you want to reboot the device?')) {
+                // The product spec does not specify a reboot endpoint, assuming one at /reboot
+                fetch('/reboot', { method: 'POST' })
+                    .then(() => alert('Device is rebooting.'))
+                    .catch(error => console.error('Error rebooting:', error));
+            }
+        }
+
+        // Fetch status every 5 seconds
+        setInterval(getStatus, 5000);
+        // Initial status fetch
+        getStatus();
+    </script>
+</body>
+</html>
