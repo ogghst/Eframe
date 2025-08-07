@@ -6,12 +6,12 @@ This document tracks the implementation status of the features defined in `Produ
 | ------------------------- | ----------- | ------------------------------------------------------------------------------------------------- |
 | **Core Infrastructure**   |             |                                                                                                   |
 | Project Structure         | ✅ Implemented | The basic project structure with all necessary files and directories has been created.            |
-| Wi-Fi Connectivity        | ✅ Implemented | Basic Wi-Fi station mode is implemented with hardcoded credentials.                               |
+| Wi-Fi Connectivity        | ✅ Implemented | Wi-Fi connection is handled by the Wi-Fi Provisioning Manager.                                    |
 | **Main Features**         |             |                                                                                                   |
-| Wi-Fi Provisioning (BLE)  | ⏳ In Progress | Basic BLE provisioning is implemented. Still needs testing and refinement.                        |
+| Wi-Fi Provisioning (BLE)  | ✅ Implemented | Implemented with unique service name generation.                                                  |
 | Web Server                | ✅ Implemented | Implemented with configuration upload endpoint.                                                   |
 | Configuration Parsing     | ⏳ In Progress | Basic JSON parser is implemented. Still needs integration with other modules.                     |
-| Display System            | ⏳ In Progress | The display driver integration is the next feature to be implemented.                             |
+| Display System            | ✅ Implemented | Foundational grid system and widget rendering structure are implemented.                           |
 | MQTT Integration          | ❌ Missing  | The MQTT client for data updates is not yet implemented.                                          |
 | Button Handling           | ❌ Missing  | The logic to handle physical button presses is not yet implemented.                                 |
 | **Widgets**               |             |                                                                                                   |

@@ -29,8 +29,8 @@ void app_main(void)
         // Initialize display
         display_init();
 
-        // Draw a test pattern
-        display_draw_test_pattern();
+        // Render widgets based on configuration
+        display_render_widgets();
     } else {
         ESP_LOGE(TAG, "Wi-Fi connection failed, stopping application");
     }

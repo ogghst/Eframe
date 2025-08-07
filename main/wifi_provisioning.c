@@ -10,6 +10,7 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "esp_netif.h"
+#include "esp_mac.h"
 
 #include "wifi_provisioning/manager.h"
 #include "wifi_provisioning/scheme_ble.h"
@@ -138,14 +139,19 @@ void wifi_init_sta(void)
     return connected;
 }
 
-// Dummy functions for getting service name and proof of possession
-// These should be implemented to be unique for each device
 void get_device_service_name(char *service_name, size_t max)
 {
-    snprintf(service_name, max, "PROV_EINK");
+    uint8_t eth_mac[6];
+    const char *ssid_prefix = "PROV_EINK_";
+    esp_wifi_get_mac(WIFI_IF_STA, eth_mac);
+    snprintf(service_name, max, "%s%02X%02X%02X",
+             ssid_prefix, eth_mac[3], eth_mac[4], eth_mac[5]);
 }
 
 void get_proof_of_possession(char *pop, size_t max)
 {
-    snprintf(pop, max, "pop1234");
+    uint8_t eth_mac[6];
+    esp_wifi_get_mac(WIFI_IF_STA, eth_mac);
+    snprintf(pop, max, "%02X%02X%02X%02X",
+             eth_mac[2], eth_mac[3], eth_mac[4], eth_mac[5]);
 }
