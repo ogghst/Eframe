@@ -4,6 +4,7 @@
 #include "wifi_provisioning.h"
 #include "display_manager.h"
 #include "web_server.h"
+#include "config_parser.h"
 
 static const char *TAG = "MAIN";
 
@@ -17,6 +18,13 @@ void app_main(void)
 
         // Start the web server
         start_web_server();
+
+        // Load configuration from SPIFFS
+        if (load_config()) {
+            ESP_LOGI(TAG, "Configuration loaded successfully");
+        } else {
+            ESP_LOGE(TAG, "Failed to load configuration, using defaults");
+        }
 
         // Initialize display
         display_init();
