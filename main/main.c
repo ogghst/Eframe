@@ -5,6 +5,7 @@
 #include "display_manager.h"
 #include "web_server.h"
 #include "config_parser.h"
+#include "mqtt_client.h"
 
 static const char *TAG = "MAIN";
 
@@ -22,6 +23,8 @@ void app_main(void)
         // Load configuration from SPIFFS
         if (load_config()) {
             ESP_LOGI(TAG, "Configuration loaded successfully");
+            // Start MQTT client
+            mqtt_app_start();
         } else {
             ESP_LOGE(TAG, "Failed to load configuration, using defaults");
         }

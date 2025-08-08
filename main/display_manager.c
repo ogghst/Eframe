@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "config_parser.h"
+#include "widget_data.h"
+#include "cJSON.h"
 
 static const char *TAG = "DISPLAY";
 
@@ -16,6 +18,15 @@ static const char *TAG = "DISPLAY";
 
 // E-paper display buffer
 static unsigned char* epd_buffer;
+
+// Widget data store
+typedef struct {
+    info_card_data_t info_card;
+    weather_card_data_t weather_card;
+    list_widget_data_t list_widget;
+} widget_data_t;
+
+static widget_data_t widget_data_store[10]; // Max 10 widgets
 
 void display_init(void)
 {
@@ -65,25 +76,25 @@ void display_get_grid_rect(int x, int y, int w, int h, int *px, int *py, int *pw
     *ph = h * CELL_HEIGHT;
 }
 
-static void display_render_info_card(const widget_config_t *widget)
+static void display_render_info_card(const widget_config_t *widget, const info_card_data_t *data)
 {
-    ESP_LOGI(TAG, "Rendering info card: %s", widget->name);
+    ESP_LOGI(TAG, "Rendering info card: %s, value: %s %s", widget->name, data->value, data->unit);
     // Placeholder: Draw a rectangle for the widget
     int x, y, w, h;
     display_get_grid_rect(widget->position.x, widget->position.y, widget->size.width, widget->size.height, &x, &y, &w, &h);
     epd_draw_filled_rect(x, y, w, h, EPD_COLOR_BLACK, epd_buffer);
 }
 
-static void display_render_weather_card(const widget_config_t *widget)
+static void display_render_weather_card(const widget_config_t *widget, const weather_card_data_t *data)
 {
-    ESP_LOGI(TAG, "Rendering weather card: %s", widget->name);
+    ESP_LOGI(TAG, "Rendering weather card: %s, value: %s %s", widget->name, data->value, data->unit);
     // Placeholder: Draw a rectangle for the widget
     int x, y, w, h;
     display_get_grid_rect(widget->position.x, widget->position.y, widget->size.width, widget->size.height, &x, &y, &w, &h);
     epd_draw_filled_rect(x, y, w, h, EPD_COLOR_RED, epd_buffer);
 }
 
-static void display_render_list_widget(const widget_config_t *widget)
+static void display_render_list_widget(const widget_config_t *widget, const list_widget_data_t *data)
 {
     ESP_LOGI(TAG, "Rendering list widget: %s", widget->name);
     // Placeholder: Draw a rectangle for the widget
@@ -108,11 +119,11 @@ void display_render_widgets(void)
     for (int i = 0; i < config->num_widgets; i++) {
         const widget_config_t *widget = &config->widgets[i];
         if (strcmp(widget->type, "info_card") == 0) {
-            display_render_info_card(widget);
+            display_render_info_card(widget, &widget_data_store[i].info_card);
         } else if (strcmp(widget->type, "weather_card") == 0) {
-            display_render_weather_card(widget);
+            display_render_weather_card(widget, &widget_data_store[i].weather_card);
         } else if (strcmp(widget->type, "list") == 0) {
-            display_render_list_widget(widget);
+            display_render_list_widget(widget, &widget_data_store[i].list_widget);
         } else {
             ESP_LOGW(TAG, "Unknown widget type: %s", widget->type);
         }
@@ -123,4 +134,54 @@ void display_render_widgets(void)
 
     EPD_Sleep();
     ESP_LOGI(TAG, "Display put to sleep");
+}
+
+void display_update_widget_by_topic(const char *topic, const char *data)
+{
+    const app_config_t *config = get_config();
+    if (!config) {
+        return;
+    }
+
+    // Find widget index by topic
+    int widget_index = -1;
+    for (int i = 0; i < config->num_widgets; i++) {
+        if (strcmp(config->widgets[i].topic, topic) == 0) {
+            widget_index = i;
+            break;
+        }
+    }
+
+    if (widget_index == -1) {
+        ESP_LOGW(TAG, "No widget found for topic: %s", topic);
+        return;
+    }
+
+    const widget_config_t *widget = &config->widgets[widget_index];
+    ESP_LOGI(TAG, "Updating widget: %s", widget->name);
+
+    cJSON *root = cJSON_Parse(data);
+    if (root == NULL) {
+        ESP_LOGE(TAG, "Failed to parse widget data JSON");
+        return;
+    }
+
+    // Parse data based on widget type
+    if (strcmp(widget->type, "info_card") == 0) {
+        info_card_data_t *d = &widget_data_store[widget_index].info_card;
+        cJSON *value = cJSON_GetObjectItem(root, "value");
+        if (cJSON_IsString(value)) strncpy(d->value, value->valuestring, sizeof(d->value) - 1);
+        cJSON *unit = cJSON_GetObjectItem(root, "unit");
+        if (cJSON_IsString(unit)) strncpy(d->unit, unit->valuestring, sizeof(d->unit) - 1);
+    } else if (strcmp(widget->type, "weather_card") == 0) {
+        // ... implement weather card parsing
+    } else if (strcmp(widget->type, "list") == 0) {
+        // ... implement list widget parsing
+    }
+
+    cJSON_Delete(root);
+
+    // For simplicity, we redraw all widgets on any update.
+    // A more advanced implementation would support partial updates.
+    display_render_widgets();
 }

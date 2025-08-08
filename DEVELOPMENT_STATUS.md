@@ -10,9 +10,9 @@ This document tracks the implementation status of the features defined in `Produ
 | **Main Features**         |             |                                                                                                   |
 | Wi-Fi Provisioning (BLE)  | ✅ Implemented | Implemented with unique service name generation.                                                  |
 | Web Server                | ✅ Implemented | Implemented with configuration upload endpoint.                                                   |
-| Configuration Parsing     | ⏳ In Progress | Basic JSON parser is implemented. Still needs integration with other modules.                     |
+| Configuration Parsing     | ✅ Implemented | Implemented and integrated with the MQTT client.                                                  |
 | Display System            | ✅ Implemented | Foundational grid system and widget rendering structure are implemented.                           |
-| MQTT Integration          | ❌ Missing  | The MQTT client for data updates is not yet implemented.                                          |
+| MQTT Integration          | ⏳ In Progress | Basic MQTT client is implemented, subscribes to topics, and handles data for info cards.        |
 | Button Handling           | ❌ Missing  | The logic to handle physical button presses is not yet implemented.                                 |
 | **Widgets**               |             |                                                                                                   |
 | Info Card Widget          | ❌ Missing  |                                                                                                   |
