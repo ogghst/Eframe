@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include "esp_log.h"
 #include "wifi_provisioning.h"
-#include "display_manager.h"
+#include "display_manager.hpp"
 #include "web_server.h"
 #include "config_parser.h"
 #include "mqtt_client.h"

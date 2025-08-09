@@ -15,9 +15,10 @@ This document tracks the implementation status of the features defined in `Produ
 | MQTT Integration          | ⏳ In Progress | Basic MQTT client is implemented, subscribes to topics, and handles data for info cards.        |
 | Button Handling           | ❌ Missing  | The logic to handle physical button presses is not yet implemented.                                 |
 | **Widgets**               |             |                                                                                                   |
-| Info Card Widget          | ❌ Missing  |                                                                                                   |
-| Weather Card Widget       | ❌ Missing  |                                                                                                   |
-| List Widget               | ❌ Missing  |                                                                                                   |
+| Info Card Widget          | ✅ Implemented | Basic rendering of value and unit.                                                                |
+| Weather Card Widget       | ✅ Implemented | Basic rendering of value, unit, and icon.                                                         |
+| List Widget               | ✅ Implemented | Basic rendering of label-value pairs.                                                             |
+
 
 **Legend:**
 - ✅ Implemented
