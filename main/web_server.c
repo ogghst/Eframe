@@ -112,6 +112,56 @@ static esp_err_t upload_post_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+static esp_err_t info_get_handler(httpd_req_t *req)
+{
+    char response[1024];
+    char mac_str[18];
+    uint8_t mac[6];
+    
+    // Get MAC address
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+    sprintf(mac_str, "%02X:%02X:%02X:%02X:%02X:%02X", 
+            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    
+    // Get memory info
+    size_t free_heap = esp_get_free_heap_size();
+    size_t min_free_heap = esp_get_minimum_free_heap_size();
+    
+    // Get chip info
+    esp_chip_info_t chip_info;
+    esp_chip_info(&chip_info);
+    
+    // Get flash size
+    uint32_t flash_size;
+    esp_flash_get_size(NULL, &flash_size);
+    
+    // Format JSON response
+    snprintf(response, sizeof(response),
+        "{"
+        "\"mac_address\":\"%s\","
+        "\"free_heap\":%u,"
+        "\"min_free_heap\":%u,"
+        "\"chip_model\":\"%s\","
+        "\"chip_cores\":%d,"
+        "\"chip_revision\":%d,"
+        "\"flash_size\":%u"
+        "}",
+        mac_str,
+        (unsigned int)free_heap,
+        (unsigned int)min_free_heap,
+        CONFIG_IDF_TARGET,
+        chip_info.cores,
+        chip_info.revision,
+        (unsigned int)flash_size
+    );
+    
+    // Set content type to JSON
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, response, HTTPD_RESP_USE_STRLEN);
+    
+    return ESP_OK;
+}
+
 static esp_err_t reboot_post_handler(httpd_req_t *req)
 {
     ESP_LOGI(TAG, "Rebooting...");
@@ -153,4 +203,11 @@ void start_web_server(void)
         .handler   = reboot_post_handler,
     };
     httpd_register_uri_handler(server, &reboot_uri);
+
+    httpd_uri_t info_uri = {
+        .uri       = "/info",
+        .method    = HTTP_GET,
+        .handler   = info_get_handler,
+    };
+    httpd_register_uri_handler(server, &info_uri);
 }

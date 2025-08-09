@@ -4,6 +4,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_task_wdt.h"
 
 static const char *TAG = "WS_EPD";
 
@@ -88,14 +89,50 @@ static inline void ws_epd_write_data(uint8_t data)
 static inline void ws_epd_wait_busy(void)
 {
     // Busy is asserted low on many controllers; use high=1 from Arduino port
+    uint32_t timeout_ms = 10000; // 10 second timeout
+    uint32_t start_time = xTaskGetTickCount();
+    
+    // Register current task with watchdog if not already registered
+    TaskHandle_t current_task = xTaskGetCurrentTaskHandle();
+    esp_err_t wdt_result = esp_task_wdt_add(current_task);
+    bool task_was_added = (wdt_result == ESP_OK);
+    
     while (gpio_get_level(EPD_PIN_BUSY) == 0) {
-        vTaskDelay(pdMS_TO_TICKS(1));
+        vTaskDelay(pdMS_TO_TICKS(10));
+        
+        // Feed the watchdog to prevent timeout (only if we successfully added the task)
+        if (task_was_added || wdt_result == ESP_ERR_INVALID_STATE) {
+            esp_task_wdt_reset();
+        }
+        
+        // Check for timeout
+        if ((xTaskGetTickCount() - start_time) > pdMS_TO_TICKS(timeout_ms)) {
+            ESP_LOGE(TAG, "Display busy wait timeout after %lu ms", timeout_ms);
+            break;
+        }
+    }
+    
+    // Clean up: remove task from watchdog if we added it
+    if (task_was_added) {
+        esp_task_wdt_delete(current_task);
     }
 }
 
 void ws_epd_init_full(void)
 {
+    ESP_LOGI(TAG, "Starting display initialization");
+    
+    // Register current task with watchdog if not already registered
+    TaskHandle_t current_task = xTaskGetCurrentTaskHandle();
+    esp_err_t wdt_result = esp_task_wdt_add(current_task);
+    bool task_was_added = (wdt_result == ESP_OK);
+    
     ws_epd_reset();
+    
+    // Feed watchdog during initialization (only if we successfully added the task)
+    if (task_was_added || wdt_result == ESP_ERR_INVALID_STATE) {
+        esp_task_wdt_reset();
+    }
 
     ws_epd_write_cmd(0x01); // POWER SETTING
     ws_epd_write_data(0x07);
@@ -111,7 +148,10 @@ void ws_epd_init_full(void)
 
     ws_epd_write_cmd(0x04); // POWER ON
     vTaskDelay(pdMS_TO_TICKS(100));
+    
+    ESP_LOGI(TAG, "Waiting for display to be ready...");
     ws_epd_wait_busy();
+    ESP_LOGI(TAG, "Display is ready");
 
     ws_epd_write_cmd(0x00); // PANEL SETTING
     ws_epd_write_data(0x1F);
@@ -131,6 +171,18 @@ void ws_epd_init_full(void)
 
     ws_epd_write_cmd(0x60); // TCON SETTING
     ws_epd_write_data(0x22);
+    
+    // Feed watchdog before finishing initialization (only if we successfully added the task)
+    if (task_was_added || wdt_result == ESP_ERR_INVALID_STATE) {
+        esp_task_wdt_reset();
+    }
+    
+    // Clean up: remove task from watchdog if we added it
+    if (task_was_added) {
+        esp_task_wdt_delete(current_task);
+    }
+    
+    ESP_LOGI(TAG, "Display initialization completed");
 }
 
 void ws_epd_init_fast(void)
