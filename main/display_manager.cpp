@@ -198,3 +198,18 @@ extern "C" void display_update_widget_by_topic(const char *topic, const char *da
     // For simplicity, we redraw all widgets on any update.
     display_render_widgets();
 }
+
+extern "C" void display_default_view(void)
+{
+    ESP_LOGI(TAG, "Displaying default view");
+
+    display_fillScreen(EPD_WHITE);
+
+    display_setCursor(300, 200);
+    display_setTextColor(EPD_BLACK);
+    display_setTextSize(10);
+    display_print("eframe");
+
+    display_update();
+    ESP_LOGI(TAG, "Default view displayed");
+}
