@@ -60,12 +60,11 @@ public:
     size_t write(const char *str)
     {
         if(str == NULL) {
-            return 0;
+            return (size_t)0;
         }
         return write((const uint8_t *) str, strlen(str));
     }
-    // [vtable for Adafruit_GFX]+0x14): undefined reference to `Print::write(uns
-igned char const*, unsigned int)'
+    // [vtable for Adafruit_GFX]+0x14): undefined reference to `Print::write(unsigned char const*, unsigned int)'
     // was: virtual
     size_t write(const uint8_t *buffer, size_t size);
     size_t write(const char *buffer, size_t size)
@@ -73,8 +72,7 @@ igned char const*, unsigned int)'
         return write((const uint8_t *) buffer, size);
     }
 
-    //size_t printf(const char * format, ...)  __attribute__ ((format (printf, 2
-, 3)));
+    //size_t printf(const char * format, ...)  __attribute__ ((format (printf, 2, 3)));
     size_t print(const __FlashStringHelper *);
     size_t print(const String &);
     size_t print(const char[]);

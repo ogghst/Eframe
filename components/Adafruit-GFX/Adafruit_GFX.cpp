@@ -1261,8 +1261,7 @@ size_t Adafruit_GFX::write(uint8_t c) {
       uint8_t first = pgm_read_byte(&gfxFont->first);
 
       if ((c >= first) && (c <= (uint8_t)pgm_read_byte(&gfxFont->last))) {
-        //printf("write() >=%d <=%d CHAR is in range\n",first, (uint8_t)pgm_read
-_byte(&gfxFont->last));
+        //printf("write() >=%d <=%d CHAR is in range\n",first, (uint8_t)pgm_read_byte(&gfxFont->last));
 
         GFXglyph *glyph = pgm_read_glyph_ptr(gfxFont, c - first);
         uint8_t w = pgm_read_byte(&glyph->width),

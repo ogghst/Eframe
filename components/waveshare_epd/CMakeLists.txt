@@ -3,5 +3,5 @@ idf_component_register(SRCS "epd.cpp"
                            "epd4spi.cpp"
                            "models/goodisplay/gdey075T7.cpp"
                     INCLUDE_DIRS "include"
-                    REQUIRES Adafruit-GFX)
+                    REQUIRES Adafruit-GFX esp_driver_spi driver)
 

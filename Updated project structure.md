@@ -1,41 +1,20 @@
 
 
-Based on research of the requested components, here's the updated project structure and integration instructions:
+# ESP-IDF E-Ink Dashboard with Good Display 7.5" B/W
 
-## Updated Project Structure
+revise the project to use the calepd and adafruit gfx projects, to work with good display 7.5" b/w
+
+## Updated Project Structure for Good Display 7.5" B/W
 
 ```
-eink-dashboard/
+/
 ├── main/
-│   ├── CMakeLists.txt
-│   ├── dashboard_main.c
-│   ├── wifi_provisioning.c/h
-│   ├── web_server.c/h
-│   ├── mqtt_client.c/h
-│   ├── display_manager.c/h
-│   ├── button_handler.c/h
-│   ├── config_parser.c/h
-│   └── dashboard_config.h
+|   |   ...
 ├── components/
 │   ├── cale-espd/              # E-Paper display driver component
-│   │   ├── CMakeLists.txt
-│   │   ├── epd.h
-│   │   ├── epd.cpp
-│   │   ├── epdif.h
-│   │   ├── epdif.cpp
-│   │   ├── epdfont.h
-│   │   └── fonts/
+|   |   ...
 │   ├── adafruit_gfx/           # Graphics library component
-│   │   ├── CMakeLists.txt
-│   │   ├── Adafruit_GFX.cpp
-│   │   ├── Adafruit_GFX.h
-│   │   ├── gfxfont.h
-│   │   ├── glcdfont.c
-│   │   └── Adafruit_SPITFT.h
-│   └── dashboard_ui/
-│       ├── CMakeLists.txt
-│       ├── widget_manager.c/h
-│       └── widgets.c/h
+|   |   ...
 ├── www/
 │   ├── index.html
 │   ├── styles.css
@@ -46,33 +25,45 @@ eink-dashboard/
 └── README.md
 ```
 
-## Component Information
+## Good Display 7.5" B/W Configuration
 
-### 1. cale-espd
-- **Source**: [cale-idf](https://github.com/martinberlin/cale-idf) by Martin Berlin
-- **Purpose**: ESP-IDF component for E-Paper displays (including 7.5" 800x480)
-- **Features**:
-  - Hardware abstraction for E-Paper displays
-  - Partial refresh support
-  - SPI communication handling
-  - Supports Good Display (GDEW) and Waveshare panels
-- **License**: MIT
+### Display Specifications
+- **Model**: GDEW075T7
+- **Resolution**: 800×480 pixels
+- **Colors**: Black and White
+- **Interface**: SPI
+- **Controller**: IL0373
 
-### 2. adafruit_gfx
-- **Source**: [ESP-IDF Adafruit GFX](https://github.com/uhoogerwaard/esp-idf-adafruit-gfx) by Uri Hoogewaard
-- **Purpose**: ESP-IDF port of Adafruit's graphics library
-- **Features**:
-  - Graphics primitives (points, lines, circles, rectangles)
-  - Text rendering with multiple fonts
-  - Bitmap drawing
-  - Hardware-accelerated rendering
-- **License**: BSD
+### Pin Configuration
+```c
+// dashboard_config.h
+#pragma once
+
+// Good Display GDEW075T7 Pin Configuration
+#define EPD_MOSI   23
+#define EPD_MISO   12
+#define EPD_SCLK   18
+#define EPD_CS     15
+#define EPD_DC     2
+#define EPD_RST    4
+#define EPD_BUSY   5
+
+// Display resolution
+#define EPD_WIDTH  800
+#define EPD_HEIGHT 480
+
+// Grid configuration
+#define GRID_COLS 12
+#define GRID_ROWS 8
+#define CELL_WIDTH (EPD_WIDTH / GRID_COLS)
+#define CELL_HEIGHT (EPD_HEIGHT / GRID_ROWS)
+```
 
 ## Integration Instructions
 
 ### 1. Add Components to Project
 
-#### Option A: Git Submodules (Recommended)
+#### Git Submodules (Recommended)
 ```bash
 # Add cale-espd
 git submodule add https://github.com/martinberlin/cale-idf components/cale-espd
@@ -81,13 +72,7 @@ git submodule add https://github.com/martinberlin/cale-idf components/cale-espd
 git submodule add https://github.com/uhoogerwaard/esp-idf-adafruit-gfx components/adafruit_gfx
 ```
 
-#### Option B: Manual Download
-1. Download [cale-idf](https://github.com/martinberlin/cale-idf/archive/refs/heads/master.zip)
-2. Download [esp-idf-adafruit-gfx](https://github.com/uhoogerwaard/esp-idf-adafruit-gfx/archive/refs/heads/master.zip)
-3. Extract both into `components/` directory
-4. Rename folders to `cale-espd` and `adafruit_gfx`
-
-### 2. Update CMakeLists.txt
+### 2. Update CMakeLists.txt Files
 
 #### Main CMakeLists.txt (Project Root)
 ```cmake
@@ -124,33 +109,7 @@ idf_component_register(
     REQUIRES cale-espd adafruit_gfx)
 ```
 
-### 3. Configure Display Pins
-
-Update `dashboard_config.h`:
-```c
-#pragma once
-
-// Display configuration (Waveshare ESP32 Driver Board)
-#define EPD_MOSI   23
-#define EPD_MISO   12
-#define EPD_SCLK   18
-#define EPD_CS     15
-#define EPD_DC     2
-#define EPD_RST    4
-#define EPD_BUSY   5
-
-// Display resolution
-#define EPD_WIDTH  800
-#define EPD_HEIGHT 480
-
-// Grid configuration
-#define GRID_COLS 12
-#define GRID_ROWS 8
-#define CELL_WIDTH (EPD_WIDTH / GRID_COLS)
-#define CELL_HEIGHT (EPD_HEIGHT / GRID_ROWS)
-```
-
-### 4. Update Display Manager
+### 3. Update Display Manager for Good Display
 
 ```c
 // display_manager.c
@@ -158,7 +117,8 @@ Update `dashboard_config.h`:
 #include "adafruit_gfx/Adafruit_GFX.h"
 #include "dashboard_config.h"
 
-Epd epd(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY, EPD_SCLK, EPD_MOSI, EPD_MISO);
+// Initialize Good Display GDEW075T7
+Epd<GDEW075T7> epd(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY, EPD_SCLK, EPD_MOSI, EPD_MISO);
 Adafruit_GFX *gfx = &epd;
 
 void display_init() {
@@ -186,16 +146,21 @@ void render_widget(widget_t *widget) {
 }
 ```
 
-### 5. Build Configuration
+### 4. Configure for Good Display in sdkconfig
 
-In `sdkconfig`, ensure these are enabled:
 ```
+# Enable SPI Master
 CONFIG_SPI_MASTER=y
 CONFIG_SPI_MASTER_ISR_IN_IRAM=y
+
+# Disable Arduino compatibility
 CONFIG_ENABLE_ARDUINO_DEPENDS=n
+
+# Set logging level
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
 ```
 
-### 6. Build and Flash
+### 5. Build and Flash
 
 ```bash
 # Initialize submodules (if used)
@@ -211,20 +176,91 @@ idf.py build
 idf.py -p /dev/ttyUSB0 flash monitor
 ```
 
-## Key Benefits of New Components
+## Good Display Specific Notes
 
-1. **cale-espd**:
-   - Optimized for ESP-IDF with native SPIFFS support
-   - Better partial refresh implementation
-   - Supports multiple E-Paper models
-   - Lower memory footprint than Waveshare driver
+### Display Initialization
 
-2. **adafruit_gfx**:
-   - Rich graphics primitives
-   - Multiple font support
-   - Hardware acceleration
-   - Well-documented API
-   - Compatible with Adafruit's ecosystem
+The Good Display GDEW075T7 requires specific initialization parameters:
+
+```c
+// In display_manager.c
+void display_init() {
+    epd.init();
+    epd.setRotation(1); // Landscape orientation
+    epd.clearBuffer();
+    epd.display();
+    
+    // Good Display specific settings
+    epd.setTemperature(20); // Set temperature for optimal refresh
+}
+```
+
+### Partial Refresh Support
+
+Good Display supports partial refresh for faster updates:
+
+```c
+void update_partial(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
+    epd.updateWindow(x, y, w, h, true); // true for partial refresh
+}
+```
+
+### Power Management
+
+Good Display has specific power requirements:
+
+```c
+void enter_sleep_mode() {
+    epd.sleep(); // Put display in sleep mode to save power
+}
+
+void wake_up() {
+    epd.init(); // Reinitialize after sleep
+}
+```
+
+## Hardware Connection
+
+```
+Good Display GDEW075T7 → ESP32
+VCC → 3.3V
+GND → GND
+DIN → MOSI (GPIO 23)
+CLK → SCLK (GPIO 18)
+CS  → CS (GPIO 15)
+DC  → DC (GPIO 2)
+RST → RST (GPIO 4)
+BUSY → BUSY (GPIO 5)
+```
+
+## Testing with Good Display
+
+1. **Basic Display Test**:
+
+   ```c
+   void test_display() {
+       epd.clearBuffer();
+       gfx->setCursor(10, 10);
+       gfx->println("Good Display Test");
+       epd.display();
+   }
+   ```
+
+2. **Partial Refresh Test**:
+
+   ```c
+   void test_partial_refresh() {
+       epd.updateWindow(100, 100, 200, 100, true);
+   }
+   ```
+
+3. **Temperature Compensation**:
+
+   ```c
+   void set_temperature(float temp) {
+       epd.setTemperature(temp);
+   }
+   ```
 
 ## Migration Notes
 
@@ -234,4 +270,12 @@ idf.py -p /dev/ttyUSB0 flash monitor
 4. Adjust pin configuration to match new driver requirements
 5. Test partial refresh functionality as implementation differs
 
-This implementation provides a more robust, maintainable, and feature-rich foundation for the E-Ink dashboard application while following ESP-IDF best practices.
+## Benefits of Using cale-espd with Good Display
+
+1. **Optimized Driver**: Specifically designed for Good Display panels
+2. **Partial Refresh**: Efficient updates for dynamic content
+3. **Temperature Compensation**: Automatic adjustment for different temperatures
+4. **Low Power**: Optimized power management for e-ink displays
+5. **ESP-IDF Integration**: Native support for ESP-IDF features
+
+This configuration provides a robust solution for the Good Display 7.5" B/W e-ink panel with all the dashboard features while following ESP-IDF best practices.

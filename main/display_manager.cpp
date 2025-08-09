@@ -1,7 +1,10 @@
 #include "display_manager.hpp"
 #include "esp_log.h"
+#include <cstdio>
+#include <cstring>
 #include <string>
 #include <vector>
+#include <cJSON.h>
 
 // CalEPD driver
 #include <epd.h>
@@ -51,7 +54,7 @@ static void display_render_info_card(const widget_config_t *widget, const info_c
     display.setCursor(x + 5, y + 25);
     display.setTextSize(1);
     char value_str[128];
-    snprintf(value_str, sizeof(value_str), "%s %s", data->value, data->unit);
+    snprintf(value_str, 128, "%s %s", data->value, data->unit);
     display.print(value_str);
 }
 
@@ -76,7 +79,7 @@ static void display_render_weather_card(const widget_config_t *widget, const wea
     display.setCursor(x + 20, y + 25);
     display.setTextColor(EPD_BLACK);
     char value_str[128];
-    snprintf(value_str, sizeof(value_str), "%s %s", data->value, data->unit);
+    snprintf(value_str, 128, "%s %s", data->value, data->unit);
     display.print(value_str);
 }
 
@@ -96,7 +99,7 @@ static void display_render_list_widget(const widget_config_t *widget, const list
     display.setTextSize(1);
     for (int i = 0; i < data->num_items; i++) {
         char item_str[128];
-        snprintf(item_str, sizeof(item_str), "%s: %s", data->items[i].label, data->items[i].value);
+        snprintf(item_str, 128, "%s: %s", data->items[i].label, data->items[i].value);
         display.setCursor(x + 5, y + 25 + (i * 10));
         display.print(item_str);
     }

@@ -27,4 +27,11 @@ typedef struct {
     uint32_t timestamp;
 } list_widget_data_t;
 
+// Union type for different widget data types
+typedef union {
+    info_card_data_t info_card;
+    weather_card_data_t weather_card;
+    list_widget_data_t list_widget;
+} widget_data_t;
+
 #endif // WIDGET_DATA_H

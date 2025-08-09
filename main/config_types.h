@@ -21,14 +21,14 @@ typedef struct {
 typedef struct {
     int width;
     int height;
-} size_t;
+} widget_size_t;
 
 // Widget Configuration
 typedef struct {
     char name[64];
     char type[32];
     position_t position;
-    size_t size;
+    widget_size_t size;
     char topic[128];
 } widget_config_t;
 
