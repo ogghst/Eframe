@@ -4,3 +4,4 @@ idf_component_register(SRCS "epd.cpp"
                            "models/goodisplay/gdey075T7.cpp"
                     INCLUDE_DIRS "include"
                     REQUIRES Adafruit-GFX)
+
