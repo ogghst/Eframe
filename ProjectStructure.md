@@ -53,6 +53,7 @@ This document outlines the project structure following ESP-IDF v5 best practices
 **Purpose**: Contains the main application logic and task coordination.
 
 **Key Files**:
+
 - `dashboard_main.c`: Entry point with task creation and system initialization
 - `wifi_provisioning.c/h`: BLE Wi-Fi provisioning implementation
 - `web_server.c/h`: HTTP server for configuration upload
@@ -63,6 +64,7 @@ This document outlines the project structure following ESP-IDF v5 best practices
 - `dashboard_config.h`: Application constants and configuration
 
 **CMakeLists.txt**:
+
 ```cmake
 idf_component_register(SRCS 
     "dashboard_main.c"
@@ -76,16 +78,18 @@ idf_component_register(SRCS
     EMBED_FILES "../www/index.html")
 ```
 
-### 2. Waveshare E-Paper Driver Component (`components/waveshare_epd/`)
+### 2. E-Paper Driver Component (`components/waveshare_epd/`)
 
-**Purpose**: Provides the hardware abstraction layer for the Waveshare e-paper display.
+**Purpose**: Provides the hardware abstraction layer for the e-paper display.
 
 **Key Files**:
+
 - `epd_driver.h/c`: Low-level display driver functions
 - `epd_highlevel.h/c`: High-level display operations
 - `font.h`: Font definitions for text rendering
 
 **CMakeLists.txt**:
+
 ```cmake
 idf_component_register(SRCS 
     "epd_driver.c"
@@ -99,10 +103,12 @@ idf_component_register(SRCS
 **Purpose**: Implements the widget system and UI rendering logic.
 
 **Key Files**:
+
 - `widget_manager.c/h`: Widget lifecycle and layout management
 - `widgets.c/h`: Individual widget implementations (info card, weather card, list)
 
 **CMakeLists.txt**:
+
 ```cmake
 idf_component_register(SRCS 
     "widget_manager.c"
@@ -116,6 +122,7 @@ idf_component_register(SRCS
 **Purpose**: Contains the web UI for device configuration.
 
 **Key Files**:
+
 - `index.html`: Configuration upload form
 - `styles.css`: Styling for the web interface
 - `script.js`: Client-side logic for configuration handling
@@ -123,26 +130,31 @@ idf_component_register(SRCS
 ## ESP-IDF v5 Best Practices Implementation
 
 ### 1. Component-Based Architecture
+
 - Modular design with separate components for display, UI, and application logic
 - Clear separation of concerns between hardware abstraction and business logic
 - Reusable components that can be independently tested
 
 ### 2. Build System
+
 - Modern CMake-based build system
 - Proper component dependencies declared in CMakeLists.txt files
 - Embedded web files using `EMBED_FILES` in main component
 
 ### 3. Configuration Management
+
 - Centralized configuration in `dashboard_config.h`
 - Kconfig options for configurable parameters
 - Partition table for SPIFFS storage (`partitions.csv`)
 
 ### 4. Memory Management
+
 - Static memory allocation where possible
 - Heap usage tracking and monitoring
 - Proper error handling for allocation failures
 
 ### 5. Task Management
+
 - Dedicated FreeRTOS tasks for each major subsystem:
   - Wi-Fi provisioning task
   - Web server task
@@ -153,17 +165,20 @@ idf_component_register(SRCS
 - Inter-task communication using queues and semaphores
 
 ### 6. Error Handling
+
 - ESP-IDF error handling macros (`ESP_ERROR_CHECK`)
 - Graceful degradation for non-critical failures
 - Error logging with appropriate log levels
 - Watchdog timer for system hangs
 
 ### 7. Power Management
+
 - Deep sleep support when display is idle
 - Dynamic frequency scaling
 - Peripheral power management
 
 ### 8. Security
+
 - Encrypted credential storage in NVS
 - Input validation for all configuration parameters
 - Secure web server with HTTPS support (optional)
@@ -172,6 +187,7 @@ idf_component_register(SRCS
 ## Key Implementation Details
 
 ### 1. Display Initialization
+
 ```c
 // In display_manager.c
 #include "waveshare_epd/epd_driver.h"
@@ -184,6 +200,7 @@ void display_init() {
 ```
 
 ### 2. Widget Rendering
+
 ```c
 // In widgets.c
 void render_info_card(widget_t *widget, uint8_t *framebuffer) {
@@ -203,6 +220,7 @@ void render_info_card(widget_t *widget, uint8_t *framebuffer) {
 ```
 
 ### 3. MQTT Message Handling
+
 ```c
 // In mqtt_client.c
 void mqtt_event_handler(void *handler_args, esp_event_base_t base, 
@@ -222,6 +240,7 @@ void mqtt_event_handler(void *handler_args, esp_event_base_t base,
 ```
 
 ### 4. Button Handling
+
 ```c
 // In button_handler.c
 void button_task(void *pvParameters) {
@@ -242,6 +261,7 @@ void button_task(void *pvParameters) {
 ```
 
 ### 5. Configuration Parsing
+
 ```c
 // In config_parser.c
 esp_err_t parse_config_file(const char *filename, dashboard_config_t *config) {
@@ -284,32 +304,36 @@ esp_err_t parse_config_file(const char *filename, dashboard_config_t *config) {
 ## Partition Table (`partitions.csv`)
 
 ```
-# Name,   Type, SubType, Offset,  Size, Flags
-nvs,      data, nvs,     0x9000,  0x6000,
-phy_init, data, phy,     0xf000,  0x1000,
-factory,  app,  factory, 0x10000, 2M,
-storage,  data, spiffs,  ,        1M,
+# Name,   Type, SubType, Offset,   Size, Flags
+nvs,        data, nvs,     0x9000,    24K,
+phy_init,   data, phy,     0xf000,    4K,
+factory,    app,  factory, 0x10000,   1M,
+storage,    data, spiffs,  0x110000,  512K,
 ```
 
 ## Build and Flash Instructions
 
 1. Set up ESP-IDF v5 environment:
+
    ```bash
    . $HOME/esp/esp-idf/export.sh
    ```
 
 2. Configure the project:
+
    ```bash
    cd eink-dashboard
    idf.py menuconfig
    ```
 
 3. Build the project:
+
    ```bash
    idf.py build
    ```
 
 4. Flash to device:
+
    ```bash
    idf.py -p /dev/ttyUSB0 flash monitor
    ```

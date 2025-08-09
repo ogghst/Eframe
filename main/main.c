@@ -5,7 +5,7 @@
 #include "display_manager.hpp"
 #include "web_server.h"
 #include "config_parser.h"
-#include "mqtt_client.h"
+#include "app_mqtt.h"
 
 static const char *TAG = "MAIN";
 
@@ -21,7 +21,8 @@ void app_main(void)
         start_web_server();
 
         // Load configuration from SPIFFS
-        if (load_config()) {
+        bool config_loaded = load_config();
+        if (config_loaded) {
             ESP_LOGI(TAG, "Configuration loaded successfully");
             // Start MQTT client
             mqtt_app_start();
@@ -33,7 +34,11 @@ void app_main(void)
         display_init();
 
         // Render widgets based on configuration
-        display_render_widgets();
+        if (config_loaded) {
+            display_render_widgets();
+        } else {
+            display_default_view();
+        }
     } else {
         ESP_LOGE(TAG, "Wi-Fi connection failed, stopping application");
     }
