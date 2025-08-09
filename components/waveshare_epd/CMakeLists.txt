@@ -1,4 +1,6 @@
-idf_component_register(SRCS "epd_driver.c"
-                           "epd_highlevel.c"
-                           "font8.c"
-                    INCLUDE_DIRS ".")
+idf_component_register(SRCS "epd.cpp"
+                           "epdspi.cpp"
+                           "epd4spi.cpp"
+                           "models/goodisplay/gdey075T7.cpp"
+                    INCLUDE_DIRS "include"
+                    REQUIRES Adafruit-GFX)

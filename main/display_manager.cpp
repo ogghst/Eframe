@@ -1,80 +1,33 @@
-#include "display_manager.h"
-#include "epd_driver.h"
-#include "epd_highlevel.h"
+#include "display_manager.hpp"
 #include "esp_log.h"
-#include <stdlib.h>
-#include <string.h>
+#include <string>
+#include <vector>
+
+// CalEPD driver
+#include <epd.h>
+#include <epdspi.h>
+#include <goodisplay/gdey075T7.h>
+
+// Adafruit GFX
+#include <Adafruit_GFX.h>
+
+// Config and data
 #include "config_parser.h"
 #include "widget_data.h"
-#include "cJSON.h"
-#include "font.h"
 
 static const char *TAG = "DISPLAY";
 
-// Grid system
-#define GRID_COLS 12
-#define GRID_ROWS 8
-#define CELL_WIDTH (EPD_WIDTH / GRID_COLS)
-#define CELL_HEIGHT (EPD_HEIGHT / GRID_ROWS)
-
-// E-paper display buffer
-static unsigned char* epd_buffer;
+// EPD driver objects
+EpdSpi io;
+Gdey075T7 display(io);
 
 // Widget data store
-typedef struct {
-    info_card_data_t info_card;
-    weather_card_data_t weather_card;
-    list_widget_data_t list_widget;
-} widget_data_t;
-
 static widget_data_t widget_data_store[10]; // Max 10 widgets
 
-void display_init(void)
+extern "C" void display_init(void)
 {
     ESP_LOGI(TAG, "Initializing display");
-    epd_buffer = (unsigned char*)malloc(EPD_WIDTH * EPD_HEIGHT / 2);
-    if (!epd_buffer) {
-        ESP_LOGE(TAG, "Failed to allocate memory for display buffer");
-        return;
-    }
-    EPD_Init();
-    ESP_LOGI(TAG, "Display initialized");
-}
-
-void display_draw_test_pattern(void)
-{
-    ESP_LOGI(TAG, "Drawing test pattern");
-
-    // The buffer is for black/white and red/white.
-    // For BWR displays, you often have one buffer for black and one for red.
-    // This is a simplification. A real driver would handle this.
-    // For now, we assume a single buffer and the drawing function knows how to handle colors.
-
-    // Clear buffer to white
-    memset(epd_buffer, 0xFF, EPD_WIDTH * EPD_HEIGHT / 2);
-
-    // Draw a black rectangle
-    epd_draw_filled_rect(10, 10, 200, 100, EPD_COLOR_BLACK, epd_buffer);
-
-    // Draw a red rectangle
-    epd_draw_filled_rect(220, 10, 200, 100, EPD_COLOR_RED, epd_buffer);
-
-    // The rest of the screen will be white
-
-    EPD_Display(epd_buffer);
-    ESP_LOGI(TAG, "Test pattern displayed");
-
-    // After drawing, put the display to sleep to save power
-    EPD_Sleep();
-    ESP_LOGI(TAG, "Display put to sleep");
-}
-
-void display_get_grid_rect(int x, int y, int w, int h, int *px, int *py, int *pw, int *ph)
-{
-    *px = x * CELL_WIDTH;
-    *py = y * CELL_HEIGHT;
-    *pw = w * CELL_WIDTH;
-    *ph = h * CELL_HEIGHT;
+    display.init(false); // false for production
 }
 
 static void display_render_info_card(const widget_config_t *widget, const info_card_data_t *data)
@@ -82,67 +35,75 @@ static void display_render_info_card(const widget_config_t *widget, const info_c
     ESP_LOGI(TAG, "Rendering info card: %s, value: %s %s", widget->name, data->value, data->unit);
 
     int x, y, w, h;
-    display_get_grid_rect(widget->position.x, widget->position.y, widget->size.width, widget->size.height, &x, &y, &w, &h);
+    //display_get_grid_rect(widget->position.x, widget->position.y, widget->size.width, widget->size.height, &x, &y, &w, &h);
+    // For now, let's just use hardcoded values
+    x = 10; y = 10; w = 100; h = 50;
 
-    // Draw a white background with a black border
-    epd_draw_filled_rect(x, y, w, h, EPD_COLOR_WHITE, epd_buffer);
-    //epd_draw_rect(x, y, w, h, EPD_COLOR_BLACK, epd_buffer); // Assuming epd_draw_rect exists
 
-    // Draw widget name
-    epd_draw_string(x + 5, y + 5, widget->name, &Font8, EPD_COLOR_BLACK, epd_buffer);
+    display.fillRect(x, y, w, h, EPD_WHITE);
+    display.drawRect(x, y, w, h, EPD_BLACK);
 
-    // Draw value
+    display.setCursor(x + 5, y + 5);
+    display.setTextColor(EPD_BLACK);
+    display.setTextSize(2);
+    display.print(widget->name);
+
+    display.setCursor(x + 5, y + 25);
+    display.setTextSize(1);
     char value_str[128];
     snprintf(value_str, sizeof(value_str), "%s %s", data->value, data->unit);
-    epd_draw_string(x + 5, y + 20, value_str, &Font8, EPD_COLOR_BLACK, epd_buffer);
+    display.print(value_str);
 }
 
 static void display_render_weather_card(const widget_config_t *widget, const weather_card_data_t *data)
 {
     ESP_LOGI(TAG, "Rendering weather card: %s, value: %s %s", widget->name, data->value, data->unit);
+    int x = 120, y = 10, w = 100, h = 50;
 
-    int x, y, w, h;
-    display_get_grid_rect(widget->position.x, widget->position.y, widget->size.width, widget->size.height, &x, &y, &w, &h);
+    display.fillRect(x, y, w, h, EPD_WHITE);
+    display.drawRect(x, y, w, h, EPD_RED);
 
-    // Draw a white background with a red border
-    epd_draw_filled_rect(x, y, w, h, EPD_COLOR_WHITE, epd_buffer);
-    //epd_draw_rect(x, y, w, h, EPD_COLOR_RED, epd_buffer);
+    display.setCursor(x + 5, y + 5);
+    display.setTextColor(EPD_BLACK);
+    display.setTextSize(2);
+    display.print(widget->name);
 
-    // Draw widget name
-    epd_draw_string(x + 5, y + 5, widget->name, &Font8, EPD_COLOR_BLACK, epd_buffer);
+    display.setCursor(x + 5, y + 25);
+    display.setTextColor(EPD_RED);
+    display.setTextSize(1);
+    display.print(data->icon);
 
-    // Draw weather icon (placeholder)
-    epd_draw_string(x + 5, y + 20, data->icon, &Font8, EPD_COLOR_RED, epd_buffer);
-
-    // Draw value
+    display.setCursor(x + 20, y + 25);
+    display.setTextColor(EPD_BLACK);
     char value_str[128];
     snprintf(value_str, sizeof(value_str), "%s %s", data->value, data->unit);
-    epd_draw_string(x + 5, y + 35, value_str, &Font8, EPD_COLOR_BLACK, epd_buffer);
+    display.print(value_str);
 }
 
 static void display_render_list_widget(const widget_config_t *widget, const list_widget_data_t *data)
 {
     ESP_LOGI(TAG, "Rendering list widget: %s", widget->name);
+    int x = 10, y = 70, w = 210, h = 100;
 
-    int x, y, w, h;
-    display_get_grid_rect(widget->position.x, widget->position.y, widget->size.width, widget->size.height, &x, &y, &w, &h);
+    display.fillRect(x, y, w, h, EPD_WHITE);
+    display.drawRect(x, y, w, h, EPD_BLACK);
 
-    // Draw a white background with a black border
-    epd_draw_filled_rect(x, y, w, h, EPD_COLOR_WHITE, epd_buffer);
-    //epd_draw_rect(x, y, w, h, EPD_COLOR_BLACK, epd_buffer);
+    display.setCursor(x + 5, y + 5);
+    display.setTextColor(EPD_BLACK);
+    display.setTextSize(2);
+    display.print(widget->name);
 
-    // Draw widget name
-    epd_draw_string(x + 5, y + 5, widget->name, &Font8, EPD_COLOR_BLACK, epd_buffer);
-
-    // Draw list items
+    display.setTextSize(1);
     for (int i = 0; i < data->num_items; i++) {
         char item_str[128];
         snprintf(item_str, sizeof(item_str), "%s: %s", data->items[i].label, data->items[i].value);
-        epd_draw_string(x + 5, y + 20 + (i * 10), item_str, &Font8, EPD_COLOR_BLACK, epd_buffer);
+        display.setCursor(x + 5, y + 25 + (i * 10));
+        display.print(item_str);
     }
 }
 
-void display_render_widgets(void)
+
+extern "C" void display_render_widgets(void)
 {
     const app_config_t *config = get_config();
     if (!config) {
@@ -152,8 +113,7 @@ void display_render_widgets(void)
 
     ESP_LOGI(TAG, "Rendering %d widgets", config->num_widgets);
 
-    // Clear buffer to white
-    memset(epd_buffer, 0xFF, EPD_WIDTH * EPD_HEIGHT / 2);
+    display.fillScreen(EPD_WHITE);
 
     for (int i = 0; i < config->num_widgets; i++) {
         const widget_config_t *widget = &config->widgets[i];
@@ -163,19 +123,14 @@ void display_render_widgets(void)
             display_render_weather_card(widget, &widget_data_store[i].weather_card);
         } else if (strcmp(widget->type, "list") == 0) {
             display_render_list_widget(widget, &widget_data_store[i].list_widget);
-        } else {
-            ESP_LOGW(TAG, "Unknown widget type: %s", widget->type);
         }
     }
 
-    EPD_Display(epd_buffer);
+    display.update();
     ESP_LOGI(TAG, "Widgets rendered");
-
-    EPD_Sleep();
-    ESP_LOGI(TAG, "Display put to sleep");
 }
 
-void display_update_widget_by_topic(const char *topic, const char *data)
+extern "C" void display_update_widget_by_topic(const char *topic, const char *data)
 {
     const app_config_t *config = get_config();
     if (!config) {
@@ -237,6 +192,5 @@ void display_update_widget_by_topic(const char *topic, const char *data)
     cJSON_Delete(root);
 
     // For simplicity, we redraw all widgets on any update.
-    // A more advanced implementation would support partial updates.
     display_render_widgets();
 }
