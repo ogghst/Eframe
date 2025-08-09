@@ -2,6 +2,20 @@
 #include <esp_http_server.h>
 #include "esp_log.h"
 #include "esp_spiffs.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_system.h"
+#include "esp_wifi.h"
+#include "esp_mac.h"
+#include "esp_chip_info.h"
+#include "esp_flash.h"
+
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
 
 static const char *TAG = "WEB_SERVER";
 
@@ -18,17 +32,12 @@ static esp_err_t on_url_hit(httpd_req_t *req, const char *url)
     char path[600];
     snprintf(path, sizeof(path), "/spiffs%s", url);
 
-    // Check if the file exists
-    struct stat st;
-    if (stat(path, &st) == -1) {
-        // File not found
-        httpd_resp_send_404(req);
-        return ESP_OK;
-    }
-
+    // Try to open file to check if it exists
     FILE *f = fopen(path, "r");
     if (f == NULL) {
-        httpd_resp_send_500(req);
+        // File not found
+        httpd_resp_send_404(req);
+        esp_vfs_spiffs_unregister(NULL);
         return ESP_OK;
     }
 
@@ -41,6 +50,7 @@ static esp_err_t on_url_hit(httpd_req_t *req, const char *url)
             if (httpd_resp_send_chunk(req, chunk, chunk_size) != ESP_OK) {
                 fclose(f);
                 free(chunk);
+                esp_vfs_spiffs_unregister(NULL);
                 return ESP_FAIL;
             }
         }
@@ -58,9 +68,10 @@ static esp_err_t on_url_hit(httpd_req_t *req, const char *url)
 
 static esp_err_t root_get_handler(httpd_req_t *req)
 {
-    // Check if the file exists
-    struct stat st;
-    if (stat(CONFIG_FILE_PATH, &st) != -1) {
+    // Check if config.json exists by trying to open it
+    FILE *f = fopen(CONFIG_FILE_PATH, "r");
+    if (f != NULL) {
+        fclose(f);
         // config.json exists, serve it for display
         return on_url_hit(req, "/config.json");
     }
@@ -97,14 +108,14 @@ static esp_err_t upload_post_handler(httpd_req_t *req)
     }
 
     fclose(f);
-    httpd_resp_send(req, "File uploaded successfully", HTTPD_200_OK);
+    httpd_resp_send(req, "File uploaded successfully", HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
 
 static esp_err_t reboot_post_handler(httpd_req_t *req)
 {
     ESP_LOGI(TAG, "Rebooting...");
-    httpd_resp_send(req, "Rebooting...", HTTPD_200_OK);
+    httpd_resp_send(req, "Rebooting...", HTTPD_RESP_USE_STRLEN);
     vTaskDelay(pdMS_TO_TICKS(100)); // Give a moment for the response to be sent
     esp_restart();
     return ESP_OK;

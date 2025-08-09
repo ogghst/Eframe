@@ -5,7 +5,7 @@
 #include "display_manager.hpp"
 #include "web_server.h"
 #include "config_parser.h"
-#include "mqtt_client.h"
+#include "app_mqtt.h"
 
 static const char *TAG = "MAIN";
 

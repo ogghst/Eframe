@@ -1,19 +1,22 @@
 
-
 # ESP-IDF E-Ink Dashboard Application Specification (v5)
 
 ## 1. Introduction
-This document specifies the requirements for an ESP-IDF v5 application that creates a configurable dashboard on a Waveshare 7.5" e-ink display (800x480 resolution). The application supports Wi-Fi provisioning via Bluetooth, MQTT-based data updates, and configurable widgets with a web-based configuration interface. The implementation uses the official Waveshare ESP32 driver board code.
+
+This document specifies the requirements for an ESP-IDF v5 application that creates a configurable dashboard on a Seengreat 7.5" e-ink display (800x480 resolution). The application supports Wi-Fi provisioning via Bluetooth, MQTT-based data updates, and configurable widgets with a web-based configuration interface. The implementation uses the official Waveshare ESP32 driver board code.
 
 ## 2. System Overview
+
 The system consists of:
+
 - ESP32 microcontroller
-- Waveshare 7.5" E-Ink Display (800x480) connected via SPI
+- Seengreat 7.5" E-Ink Display (800x480) connected via SPI (https://seengreat.com/wiki/153)
 - 4 configurable physical buttons
 - Web-based configuration interface
 - MQTT client for data updates
 
 ### Block Diagram
+
 ```
 [Bluetooth] → [Wi-Fi Provisioning] → [Web Server]
                                       ↓
@@ -23,17 +26,18 @@ The system consists of:
 ```
 
 ## 3. Hardware Requirements
+
 - **Microcontroller**: ESP32 (ESP32-WROVER or similar)
-- **Display**: Waveshare 7.5" E-Ink Display (800x480)
+- **Display**: Seengreat 7.5" E-Ink Display (800x480)
   - Interface: SPI
-  - Controller: IL0373
-  - Supported colors: Black/White/Red (BWR)
+  - Supported colors: Black/White (BW)
 - **Buttons**: 4 momentary push buttons (GPIO configurable)
 - **Connectivity**: Wi-Fi 802.11 b/g/n, Bluetooth 4.2 BLE
 - **Power**: 5V supply (USB or external)
-- **Driver Board**: Waveshare ESP32 Driver Board for E-Paper Displays
+- **Driver Board**: ESP32 Driver Board for E-Paper Displays
 
 ## 4. Software Requirements
+
 - **Framework**: ESP-IDF v5.0 or later
 - **Libraries**:
   - `esp_wifi` for Wi-Fi connectivity
@@ -49,12 +53,14 @@ The system consists of:
 ## 5. Functional Requirements
 
 ### 5.1 Wi-Fi Provisioning
+
 - Implement BLE provisioning using ESP-IDF v5's `wifi_provisioning` component
 - Support both BLE and SoftAP provisioning modes
 - Store credentials in NVS after successful provisioning
 - Automatically reconnect to Wi-Fi on startup
 
 ### 5.2 Web Server
+
 - Start HTTP server on port 80 after Wi-Fi connection
 - Endpoints:
   - `GET /`: Configuration upload form
@@ -63,6 +69,7 @@ The system consists of:
 - Serve configuration page from SPIFFS
 
 ### 5.3 Configuration File Format
+
 JSON structure with the following schema:
 
 ```json
@@ -104,6 +111,7 @@ JSON structure with the following schema:
 ```
 
 ### 5.4 Display System
+
 - Grid-based layout system (12 columns x 8 rows)
 - Each grid cell = 66.67x60 pixels (800/12 ≈ 66.67, 480/8 = 60)
 - Supported widget types:
@@ -115,9 +123,11 @@ JSON structure with the following schema:
 - Use Waveshare driver code for display control
 
 ### 5.5 MQTT Integration
+
 - Connect to broker using configuration from JSON
 - Subscribe to widget topics defined in configuration
 - Handle JSON payloads with data structure:
+
   ```json
   {
     "value": "23.5",
@@ -125,10 +135,12 @@ JSON structure with the following schema:
     "timestamp": 1672531200
   }
   ```
+
 - Reconnect automatically on connection loss
 - QoS level 1 for all communications
 
 ### 5.6 Button Handling
+
 - 4 configurable buttons with GPIO mapping
 - Supported actions:
   - MQTT publish
@@ -138,6 +150,7 @@ JSON structure with the following schema:
 - Configurable press duration for long-press actions
 
 ## 6. Non-Functional Requirements
+
 - **Power Consumption**: <100mA average (display refresh excluded)
 - **Boot Time**: <5 seconds to operational state
 - **Update Frequency**: Display updates within 2 seconds of MQTT message
@@ -148,11 +161,13 @@ JSON structure with the following schema:
 ## 7. API and Data Formats
 
 ### 7.1 MQTT Topics
+
 - Widget data topics: Configurable per widget (e.g., `sensors/temperature`)
 - System status topic: `eink/status` (published every 60 seconds)
 - Button action topics: Configurable per button
 
 ### 7.2 Widget Data Schema
+
 ```json
 {
   "value": "string | number",
@@ -167,17 +182,20 @@ JSON structure with the following schema:
 ```
 
 ### 7.3 Web Configuration Form
+
 HTML form with:
+
 - File upload for JSON configuration
 - Current configuration display
 - Connection status indicator
 - Reboot button
 
 ## 8. User Interface
+
 - **Display Layout**:
   - 12x8 grid system
   - Automatic widget positioning
-  - Black/white/red color scheme
+  - Black/white color scheme
 - **Buttons**:
   - Physical buttons with configurable actions
   - Visual feedback on display when pressed
@@ -187,6 +205,7 @@ HTML form with:
   - Last update timestamp (bottom-right)
 
 ## 9. Configuration
+
 - **Initial Setup**:
   1. Power on device
   2. Connect to BLE provisioning service ("EInk-Dashboard")
@@ -199,6 +218,7 @@ HTML form with:
   - MQTT settings change requires reboot
 
 ## 10. Testing Plan
+
 1. **Hardware Test**:
    - Verify SPI communication with display using Waveshare driver
    - Test button GPIO functionality
@@ -222,6 +242,7 @@ HTML form with:
    - Long-press detection
 
 ## 11. Security Considerations
+
 - Wi-Fi credentials stored encrypted in NVS
 - MQTT credentials encrypted in configuration file
 - Web server accessible only on local network
@@ -230,6 +251,7 @@ HTML form with:
 - MQTT TLS support (optional via configuration)
 
 ## 12. Glossary
+
 - **BLE**: Bluetooth Low Energy
 - **MQTT**: Message Queuing Telemetry Transport
 - **SPIFFS**: SPI Flash File System
@@ -240,37 +262,8 @@ HTML form with:
 
 ## 13. Appendix
 
-### 13.1 Waveshare Driver Integration
-- Use the driver code from [Waveshare ESP32 Driver Board Code](https://files.waveshare.com/upload/5/50/E-Paper_ESP32_Driver_Board_Code.7z)
-- Key files to integrate:
-  - `epd_driver.h`/`epd_driver.c`: Core display driver
-  - `epd_highlevel.h`/`epd_highlevel.c`: High-level display functions
-  - `font.h`: Font definitions
-- Implementation steps:
-  1. Extract driver code to `components/waveshare_epd` directory
-  2. Create `CMakeLists.txt` for the component
-  3. Include driver headers in main application
-  4. Initialize display using `EPD_Init()` function
-  5. Use `EPD_Clear()`, `EPD_Display()`, and partial refresh functions
+### 13.1 Example Widget Layout
 
-### 13.2 Pinout Example
-```
-Display SPI (Waveshare Driver Board):
-  SCK  : GPIO 18
-  MOSI : GPIO 23
-  DC   : GPIO 2
-  RST  : GPIO 4
-  BUSY : GPIO 5
-  CS   : GPIO 15
-
-Buttons:
-  BTN1 : GPIO 32
-  BTN2 : GPIO 33
-  BTN3 : GPIO 34
-  BTN4 : GPIO 35
-```
-
-### 13.3 Example Widget Layout
 ```
 [Weather Card] [Info Card] [Info Card]
 [Weather Card] [Info Card] [Info Card]
@@ -280,6 +273,7 @@ Buttons:
 ```
 
 ### 13.4 ESP-IDF v5 Specifics
+
 - Use `ESP-IDF v5.0` or later
 - Enable components in `sdkconfig`:
   - `CONFIG_BT_ENABLED=y`
@@ -295,6 +289,7 @@ Buttons:
   - Web server
 
 ### 13.5 Error Handling
+
 - Display error codes on screen:
   - E1: Wi-Fi connection failed
   - E2: MQTT connection failed

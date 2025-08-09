@@ -6,13 +6,8 @@
 #include <vector>
 #include <cJSON.h>
 
-// CalEPD driver
-#include <epd.h>
-#include <epdspi.h>
-#include <goodisplay/gdey075T7.h>
-
-// Adafruit GFX
-#include <Adafruit_GFX.h>
+// ESP-IDF Waveshare driver wrapper
+#include "epd.h"
 
 // Config and data
 #include "config_parser.h"
@@ -20,9 +15,15 @@
 
 static const char *TAG = "DISPLAY";
 
-// EPD driver objects
-EpdSpi io;
-Gdey075T7 display(io);
+// Minimal wrapper over our driver to mimic used API
+static inline void display_fillScreen(uint8_t color) { epd_fill_screen(color); }
+static inline void display_fillRect(int x,int y,int w,int h,uint8_t color){ epd_fill_rect(x,y,w,h,color);} 
+static inline void display_drawRect(int x,int y,int w,int h,uint8_t color){ epd_draw_rect(x,y,w,h,color);} 
+static inline void display_setCursor(int x,int y){ epd_set_cursor(x,y);} 
+static inline void display_setTextColor(uint8_t c){ epd_set_text_color(c);} 
+static inline void display_setTextSize(int s){ epd_set_text_size(s);} 
+static inline void display_print(const char* s){ epd_print(s);} 
+static inline void display_update(){ epd_update(); }
 
 // Widget data store
 static widget_data_t widget_data_store[10]; // Max 10 widgets
@@ -30,7 +31,7 @@ static widget_data_t widget_data_store[10]; // Max 10 widgets
 extern "C" void display_init(void)
 {
     ESP_LOGI(TAG, "Initializing display");
-    display.init(false); // false for production
+    epd_begin();
 }
 
 static void display_render_info_card(const widget_config_t *widget, const info_card_data_t *data)
@@ -43,19 +44,19 @@ static void display_render_info_card(const widget_config_t *widget, const info_c
     x = 10; y = 10; w = 100; h = 50;
 
 
-    display.fillRect(x, y, w, h, EPD_WHITE);
-    display.drawRect(x, y, w, h, EPD_BLACK);
+    display_fillRect(x, y, w, h, EPD_WHITE);
+    display_drawRect(x, y, w, h, EPD_BLACK);
 
-    display.setCursor(x + 5, y + 5);
-    display.setTextColor(EPD_BLACK);
-    display.setTextSize(2);
-    display.print(widget->name);
+    display_setCursor(x + 5, y + 5);
+    display_setTextColor(EPD_BLACK);
+    display_setTextSize(2);
+    display_print(widget->name);
 
-    display.setCursor(x + 5, y + 25);
-    display.setTextSize(1);
+    display_setCursor(x + 5, y + 25);
+    display_setTextSize(1);
     char value_str[128];
     snprintf(value_str, 128, "%s %s", data->value, data->unit);
-    display.print(value_str);
+    display_print(value_str);
 }
 
 static void display_render_weather_card(const widget_config_t *widget, const weather_card_data_t *data)
@@ -63,24 +64,24 @@ static void display_render_weather_card(const widget_config_t *widget, const wea
     ESP_LOGI(TAG, "Rendering weather card: %s, value: %s %s", widget->name, data->value, data->unit);
     int x = 120, y = 10, w = 100, h = 50;
 
-    display.fillRect(x, y, w, h, EPD_WHITE);
-    display.drawRect(x, y, w, h, EPD_RED);
+    display_fillRect(x, y, w, h, EPD_WHITE);
+    display_drawRect(x, y, w, h, EPD_RED);
 
-    display.setCursor(x + 5, y + 5);
-    display.setTextColor(EPD_BLACK);
-    display.setTextSize(2);
-    display.print(widget->name);
+    display_setCursor(x + 5, y + 5);
+    display_setTextColor(EPD_BLACK);
+    display_setTextSize(2);
+    display_print(widget->name);
 
-    display.setCursor(x + 5, y + 25);
-    display.setTextColor(EPD_RED);
-    display.setTextSize(1);
-    display.print(data->icon);
+    display_setCursor(x + 5, y + 25);
+    display_setTextColor(EPD_RED);
+    display_setTextSize(1);
+    display_print(data->icon);
 
-    display.setCursor(x + 20, y + 25);
-    display.setTextColor(EPD_BLACK);
+    display_setCursor(x + 20, y + 25);
+    display_setTextColor(EPD_BLACK);
     char value_str[128];
     snprintf(value_str, 128, "%s %s", data->value, data->unit);
-    display.print(value_str);
+    display_print(value_str);
 }
 
 static void display_render_list_widget(const widget_config_t *widget, const list_widget_data_t *data)
@@ -88,20 +89,20 @@ static void display_render_list_widget(const widget_config_t *widget, const list
     ESP_LOGI(TAG, "Rendering list widget: %s", widget->name);
     int x = 10, y = 70, w = 210, h = 100;
 
-    display.fillRect(x, y, w, h, EPD_WHITE);
-    display.drawRect(x, y, w, h, EPD_BLACK);
+    display_fillRect(x, y, w, h, EPD_WHITE);
+    display_drawRect(x, y, w, h, EPD_BLACK);
 
-    display.setCursor(x + 5, y + 5);
-    display.setTextColor(EPD_BLACK);
-    display.setTextSize(2);
-    display.print(widget->name);
+    display_setCursor(x + 5, y + 5);
+    display_setTextColor(EPD_BLACK);
+    display_setTextSize(2);
+    display_print(widget->name);
 
-    display.setTextSize(1);
+    display_setTextSize(1);
     for (int i = 0; i < data->num_items; i++) {
         char item_str[128];
         snprintf(item_str, 128, "%s: %s", data->items[i].label, data->items[i].value);
-        display.setCursor(x + 5, y + 25 + (i * 10));
-        display.print(item_str);
+        display_setCursor(x + 5, y + 25 + (i * 10));
+        display_print(item_str);
     }
 }
 
@@ -116,7 +117,7 @@ extern "C" void display_render_widgets(void)
 
     ESP_LOGI(TAG, "Rendering %d widgets", config->num_widgets);
 
-    display.fillScreen(EPD_WHITE);
+    display_fillScreen(EPD_WHITE);
 
     for (int i = 0; i < config->num_widgets; i++) {
         const widget_config_t *widget = &config->widgets[i];
@@ -129,7 +130,7 @@ extern "C" void display_render_widgets(void)
         }
     }
 
-    display.update();
+    display_update();
     ESP_LOGI(TAG, "Widgets rendered");
 }
 
