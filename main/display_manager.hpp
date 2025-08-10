@@ -8,6 +8,7 @@ extern "C" {
 #endif
 
 void display_init(void);
+bool display_test_connection(void);
 void display_render_widgets(void);
 void display_default_view(void);
 void display_update_widget_by_topic(const char *topic, const char *data);

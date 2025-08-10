@@ -13,6 +13,22 @@ void app_main(void)
 {
     ESP_LOGI(TAG, "Starting E-Ink Dashboard Application");
 
+    // Initialize display
+    display_init();
+
+    // Test display connection instead of rendering
+    bool display_connected = display_test_connection();
+    if (display_connected) {
+        ESP_LOGI(TAG, "Display connection test passed - display is working");
+    } else {
+        ESP_LOGE(TAG, "Display connection test failed - check hardware connections");
+    }
+
+    display_default_view();
+
+
+
+    /*
     // Initialize Wi-Fi and wait for connection
     if (wifi_init_sta()) {
         ESP_LOGI(TAG, "Wi-Fi connected, proceeding with application");
@@ -33,13 +49,25 @@ void app_main(void)
         // Initialize display
         display_init();
 
+        // Test display connection instead of rendering
+        bool display_connected = display_test_connection();
+        if (display_connected) {
+            ESP_LOGI(TAG, "Display connection test passed - display is working");
+        } else {
+            ESP_LOGE(TAG, "Display connection test failed - check hardware connections");
+        }
+
+        // Commented out actual rendering code for testing
+        
         // Render widgets based on configuration
         if (config_loaded) {
             display_render_widgets();
         } else {
             display_default_view();
         }
+        
     } else {
         ESP_LOGE(TAG, "Wi-Fi connection failed, stopping application");
     }
+    */
 }

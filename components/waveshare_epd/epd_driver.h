@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "esp_err.h"
 
 #ifdef __cplusplus
@@ -47,6 +48,7 @@ void ws_epd_init_partial(void);
 
 // Frame operations
 void ws_epd_update(void);
+bool ws_epd_test_responsiveness(void);
 void ws_epd_write_full(const uint8_t *framebuffer);   // write and refresh
 void ws_epd_clear_white(void);
 void ws_epd_clear_black(void);

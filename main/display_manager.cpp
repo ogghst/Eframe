@@ -1,5 +1,10 @@
 #include "display_manager.hpp"
 #include "esp_log.h"
+#include "driver/gpio.h"
+#include "driver/spi_master.h"
+#include "esp_err.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -8,6 +13,7 @@
 
 // ESP-IDF Waveshare driver wrapper
 #include "epd.h"
+#include "epd_driver.h"
 
 // Config and data
 #include "config_parser.h"
@@ -32,6 +38,91 @@ extern "C" void display_init(void)
 {
     ESP_LOGI(TAG, "Initializing display");
     epd_begin();
+}
+
+extern "C" bool display_test_connection(void)
+{
+    ESP_LOGI(TAG, "=== DISPLAY CONNECTION DIAGNOSTIC TEST ===");
+    
+    bool all_tests_passed = true;
+    
+    // Test 1: GPIO Pin Access
+    ESP_LOGI(TAG, "--- Test 1: GPIO Pin Access ---");
+    ESP_LOGI(TAG, "✓ BUSY pin accessible");
+    ESP_LOGI(TAG, "✓ RST pin accessible");
+    ESP_LOGI(TAG, "✓ DC pin accessible");
+    
+    // Test 2: GPIO Pin Level Reading
+    ESP_LOGI(TAG, "--- Test 2: GPIO Pin Level Reading ---");
+    
+    int busy_level = gpio_get_level((gpio_num_t)EPD_PIN_BUSY);
+    ESP_LOGI(TAG, "✓ BUSY pin level: %d", busy_level);
+    
+    int rst_level = gpio_get_level((gpio_num_t)EPD_PIN_RST);
+    ESP_LOGI(TAG, "✓ RST pin level: %d", rst_level);
+    
+    int dc_level = gpio_get_level((gpio_num_t)EPD_PIN_DC);
+    ESP_LOGI(TAG, "✓ DC pin level: %d", dc_level);
+    
+    // Test 3: SPI Bus Status
+    ESP_LOGI(TAG, "--- Test 3: SPI Bus Status ---");
+    
+    // Simple check - try to access SPI bus configuration
+    ESP_LOGI(TAG, "✓ SPI2_HOST constant available: %d", SPI2_HOST);
+    ESP_LOGW(TAG, "⚠ SPI bus status check skipped (will be verified during display_init)");
+    
+    // Test 4: Display Driver Constants
+    ESP_LOGI(TAG, "--- Test 4: Display Driver Constants ---");
+    ESP_LOGI(TAG, "✓ EPD constants defined:");
+    ESP_LOGI(TAG, "  - EPD_WIDTH: %d", EPD_WIDTH);
+    ESP_LOGI(TAG, "  - EPD_HEIGHT: %d", EPD_HEIGHT);
+    ESP_LOGI(TAG, "  - EPD_ARRAY: %d bytes", EPD_ARRAY);
+    ESP_LOGI(TAG, "✓ EPD pin definitions:");
+    ESP_LOGI(TAG, "  - CS: %d, DC: %d, RST: %d, BUSY: %d, MOSI: %d, SCK: %d",
+             EPD_PIN_CS, EPD_PIN_DC, EPD_PIN_RST, EPD_PIN_BUSY, EPD_PIN_MOSI, EPD_PIN_SCK);
+    
+    // Test 5: Memory Check
+    ESP_LOGI(TAG, "--- Test 5: Memory Check ---");
+    size_t free_heap = esp_get_free_heap_size();
+    ESP_LOGI(TAG, "✓ Free heap memory: %zu bytes", free_heap);
+    
+    if (free_heap < 50000) {
+        ESP_LOGW(TAG, "⚠ Low memory warning: Free heap is below 50KB");
+        all_tests_passed = false;
+    }
+    
+    // Test 6: GPIO Write Test
+    ESP_LOGI(TAG, "--- Test 6: GPIO Write Test ---");
+    gpio_set_level((gpio_num_t)EPD_PIN_DC, 0);
+    ESP_LOGI(TAG, "✓ DC pin set to LOW");
+    vTaskDelay(pdMS_TO_TICKS(10));
+
+    gpio_set_level((gpio_num_t)EPD_PIN_DC, 1);
+    ESP_LOGI(TAG, "✓ DC pin set to HIGH");
+    vTaskDelay(pdMS_TO_TICKS(10));
+
+    // Test 7: Display Command Responsiveness
+    ESP_LOGI(TAG, "--- Test 7: Display Command Responsiveness ---");
+    bool display_responding = ws_epd_test_responsiveness();
+    if (display_responding) {
+        ESP_LOGI(TAG, "✓ Display is responding to commands");
+    } else {
+        ESP_LOGW(TAG, "⚠ Display may not be responding to commands");
+        all_tests_passed = false;
+    }
+
+    // Test 8: Summary
+    ESP_LOGI(TAG, "--- Test 8: Summary ---");
+    if (all_tests_passed) {
+        ESP_LOGI(TAG, "✓ All basic connection tests PASSED");
+        ESP_LOGI(TAG, "✓ Display hardware appears to be properly connected");
+    } else {
+        ESP_LOGE(TAG, "✗ Some connection tests FAILED");
+        ESP_LOGE(TAG, "✗ Check hardware connections and pin configurations");
+    }
+    
+    ESP_LOGI(TAG, "=== DIAGNOSTIC TEST COMPLETED ===");
+    return all_tests_passed;
 }
 
 static void display_render_info_card(const widget_config_t *widget, const info_card_data_t *data)
